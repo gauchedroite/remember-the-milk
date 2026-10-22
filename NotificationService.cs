@@ -11,7 +11,7 @@ public class NotificationService(string ntfyUrl)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, _ntfyUrl)
         {
-            Content = new StringContent($"Reminder: {task.Description}", Encoding.UTF8)
+            Content = new StringContent(task.Description, Encoding.UTF8)
         };
         request.Headers.Add("Title", task.NtfyTitle ?? "Reminder");
 

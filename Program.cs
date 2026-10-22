@@ -27,6 +27,8 @@ app.MapPost("/tasks", async (TaskRequest body) =>
         var task = await parser.ParseQueryAsync(body.Query);
         if (task is null)
             return Results.UnprocessableEntity(new { error = "Could not understand that request." });
+        if (task.NextOccurrence is null)
+            return Results.UnprocessableEntity(new { error = $"No time found in: \"{body.Query}\". Include a date or time, e.g. \"tomorrow at 2\". For recurring tasks use e.g. \"every day\"." });
         repository.Add(task);
         Log.Info($"Added: \"{task.Description}\" ({task.ScheduleType}), next: {task.NextOccurrence:yyyy-MM-dd HH:mm}");
         return Results.Created($"/tasks/{task.Id}", task);
