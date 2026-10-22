@@ -43,9 +43,14 @@ public class TaskRepository
         lock (_lock) { return _tasks.ToList(); }
     }
 
-    public void Remove(ScheduledTask task)
+    public bool RemoveById(Guid id)
     {
-        lock (_lock) { _tasks.RemoveAll(t => t.Id == task.Id); Persist(); }
+        lock (_lock)
+        {
+            if (_tasks.RemoveAll(t => t.Id == id) == 0) return false;
+            Persist();
+            return true;
+        }
     }
 
     public List<ScheduledTask> GetDue(DateTime now)

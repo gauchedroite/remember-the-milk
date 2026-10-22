@@ -27,7 +27,7 @@ public class Scheduler
                         Log.Info($"[scheduler] notified: {task.Description}");
 
                         if (task.ScheduleType == ScheduleType.Single)
-                            _repository.Remove(task);
+                            _repository.RemoveById(task.Id);
                         else
                             _repository.Advance(task);
                     }

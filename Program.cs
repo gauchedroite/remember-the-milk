@@ -40,6 +40,9 @@ app.MapPost("/tasks", async (TaskRequest body) =>
 
 app.MapGet("/tasks", () => Results.Ok(repository.GetAll()));
 
+app.MapDelete("/tasks/{id}", (Guid id) =>
+    repository.RemoveById(id) ? Results.NoContent() : Results.NotFound());
+
 Log.Info($"API listening on http://localhost:{config.Port}");
 app.Run($"http://localhost:{config.Port}");
 cts.Cancel();
