@@ -2,3 +2,5 @@ openrouter.key
 bin/
 obj/
 app.log
+publish/
+app.log

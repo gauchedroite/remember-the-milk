@@ -15,7 +15,7 @@ while (true)
     var query = Console.ReadLine();
     if (query is null or "exit" or "quit") break;
 
-    if (System.Text.RegularExpressions.Regex.IsMatch(query, @"\b(list|show)\b.*\b(tasks?|reminders?)\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+    if (System.Text.RegularExpressions.Regex.IsMatch(query, @"^\s*(list|show)\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
     {
         ListTasks(repository.GetAll());
         continue;

@@ -25,7 +25,7 @@ public class TaskParser
         - "NtfyTitle" is a short 2-5 word title, or null if not clearly implied.
         - "NextOccurrence" uses the current local time: {NOW}.
         - If no time of day is given, use 09:00:00.
-        - "Single" for one-off events ("tomorrow at 2", "next week"), "Daily"/"Weekly"/"Monthly" for recurring ("every day", "every monday", "monthly").
+        - "ScheduleType" must be exactly one of: Single, Daily, Weekly, Monthly (capitalized). Use "Single" for one-off events ("tomorrow at 2", "next week", "in 30 minutes"), "Daily"/"Weekly"/"Monthly" for recurring ("every day", "every monday", "monthly").
         """;
 
     private readonly HttpClient _http = new();
@@ -79,8 +79,18 @@ public class TaskParser
             PropertyNameCaseInsensitive = true,
             Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: true) }
         };
-        var task = JsonSerializer.Deserialize<ScheduledTask>(content[start..(end + 1)], jsonOpts)
-            ?? throw new InvalidOperationException("Could not deserialize LLM JSON into a ScheduledTask.");
+        ScheduledTask? task;
+        try
+        {
+            task = JsonSerializer.Deserialize<ScheduledTask>(content[start..(end + 1)], jsonOpts);
+        }
+        catch (JsonException ex)
+        {
+            // Include the raw LLM output so a nonconforming value is diagnosable.
+            throw new InvalidOperationException($"LLM returned invalid task JSON ({ex.Message}): {content}");
+        }
+        if (task is null)
+            throw new InvalidOperationException($"LLM returned null task: {content}");
 
         task.RawQuery = query;
         return task;
