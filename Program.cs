@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 var config = AppConfig.Load();
 var repository = new TaskRepository();
@@ -13,6 +14,7 @@ using var cts = new CancellationTokenSource();
 var schedulerRun = new Scheduler(repository, notifier).RunAsync(cts.Token);
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Logging.ClearProviders(); // no console noise: request logs, app lifetime messages
 builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(o =>
     o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 var app = builder.Build();
