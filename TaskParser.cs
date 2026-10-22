@@ -7,7 +7,12 @@ namespace RememberTheMilk;
 public class TaskParser
 {
     private const string ApiUrl = "https://openrouter.ai/api/v1/chat/completions";
-    private const string Model = "moonshotai/kimi-k2.7-code";
+    private readonly string _model;
+
+    public TaskParser(string model)
+    {
+        _model = model;
+    }
 
     private static readonly string SystemPrompt = """
         You convert natural-language reminder requests into JSON. Output ONLY a JSON object, no markdown, no explanation.
@@ -40,7 +45,7 @@ public class TaskParser
 
         var payload = JsonSerializer.Serialize(new
         {
-            model = Model,
+            model = _model,
             messages = new object[]
             {
                 new { role = "system", content = prompt },

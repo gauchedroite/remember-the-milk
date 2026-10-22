@@ -1,8 +1,9 @@
 using RememberTheMilk;
 
+var config = AppConfig.Load();
 var repository = new TaskRepository();
-var notifier = new NotificationService();
-var parser = new TaskParser();
+var notifier = new NotificationService(config.NtfyUrl);
+var parser = new TaskParser(config.Model);
 
 using var cts = new CancellationTokenSource();
 var schedulerRun = new Scheduler(repository, notifier).RunAsync(cts.Token);

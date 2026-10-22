@@ -2,14 +2,14 @@ using System.Text;
 
 namespace RememberTheMilk;
 
-public class NotificationService
+public class NotificationService(string ntfyUrl)
 {
-    private const string NtfyUrl = "https://ntfy.sh/ctrep-gauchedroite-9341";
+    private readonly string _ntfyUrl = ntfyUrl;
     private readonly HttpClient _http = new();
 
     public async Task SendAsync(ScheduledTask task)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Post, NtfyUrl)
+        using var request = new HttpRequestMessage(HttpMethod.Post, _ntfyUrl)
         {
             Content = new StringContent($"Reminder: {task.Description}", Encoding.UTF8)
         };
