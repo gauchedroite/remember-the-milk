@@ -1,13 +1,41 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
 namespace RememberTheMilk;
 
 public class TaskRepository
 {
+    private const string FileName = "tasks.json";
+    private static readonly JsonSerializerOptions JsonOpts = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
+    };
+
     private readonly List<ScheduledTask> _tasks = new();
     private readonly object _lock = new();
 
+    public TaskRepository()
+    {
+        if (File.Exists(FileName))
+        {
+            var loaded = JsonSerializer.Deserialize<List<ScheduledTask>>(File.ReadAllText(FileName), JsonOpts);
+            if (loaded is not null)
+                _tasks = loaded;
+        }
+    }
+
+    // Write to a temp file first: a crash mid-write must not destroy the task list.
+    private void Persist()
+    {
+        var tmp = FileName + ".tmp";
+        File.WriteAllText(tmp, JsonSerializer.Serialize(_tasks, JsonOpts));
+        File.Move(tmp, FileName, overwrite: true);
+    }
+
     public void Add(ScheduledTask task)
     {
-        lock (_lock) { _tasks.Add(task); }
+        lock (_lock) { _tasks.Add(task); Persist(); }
     }
 
     public List<ScheduledTask> GetAll()
@@ -17,7 +45,7 @@ public class TaskRepository
 
     public void Remove(ScheduledTask task)
     {
-        lock (_lock) { _tasks.RemoveAll(t => t.Id == task.Id); }
+        lock (_lock) { _tasks.RemoveAll(t => t.Id == task.Id); Persist(); }
     }
 
     public List<ScheduledTask> GetDue(DateTime now)
@@ -46,6 +74,7 @@ public class TaskRepository
             var next = stored.NextOccurrence.Value + increment;
             while (next <= DateTime.Now) next += increment;
             stored.NextOccurrence = next;
+            Persist();
         }
     }
 }

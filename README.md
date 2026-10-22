@@ -31,7 +31,7 @@ Errors: `400` for an empty query or a parse failure (message includes the raw LL
 ## How it works
 
 - **Parsing**: every query is sent to the model from `config.json` (default `moonshotai/kimi-k2.7-code`) via [OpenRouter](https://openrouter.ai), which returns strict JSON (`description`, `schedule type`, `next occurrence`, optional ntfy title). There is no fallback parser — if OpenRouter is unreachable, the task is not added.
-- **Storage**: tasks are kept in memory (see `TaskRepository`). Restarting the app loses them.
+- **Storage**: tasks are persisted to `tasks.json` in the working directory, loaded at startup. `TaskRepository` writes atomically (temp file + move).
 - **Scheduling**: a background loop (`Scheduler`) checks every 30 seconds and fires tasks whose `nextOccurrence` has passed — single tasks are removed once sent; recurring tasks (`Daily`, `Weekly`, `Monthly`) are rescheduled for their next occurrence.
 - **Notification**: `NotificationService` POSTs to your ntfy channel.
 - **Logging**: timestamped to the console and `app.log`.
@@ -63,7 +63,6 @@ A self-contained single-file build lives in `publish/` (`RememberTheMilk.exe`; c
 
 ## Known limits
 
-- **In-memory storage** — tasks are lost on exit. Swap `TaskRepository` for SQLite if you need persistence.
 - **Local time only** — no time zones; the LLM is given your current local time and works from there.
 - **Monthly = +30 days** — no calendar-aware month arithmetic.
 - **The API trusts localhost** — no authentication; don't expose the port without adding some.
