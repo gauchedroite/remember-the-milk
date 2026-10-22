@@ -1,4 +1,8 @@
 using RememberTheMilk;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using System.Text.Json.Serialization;
+using Microsoft.Extensions.DependencyInjection;
 
 var config = AppConfig.Load();
 var repository = new TaskRepository();
@@ -8,50 +12,36 @@ var parser = new TaskParser(config.Model);
 using var cts = new CancellationTokenSource();
 var schedulerRun = new Scheduler(repository, notifier).RunAsync(cts.Token);
 
-Log.Info("Task scheduler ready. Type a reminder request, or 'list' to show scheduled tasks. Ctrl+C to exit.");
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(o =>
+    o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+var app = builder.Build();
 
-while (true)
+app.MapPost("/tasks", async (TaskRequest body) =>
 {
-    var query = Console.ReadLine();
-    if (query is null or "exit" or "quit") break;
-
-    if (System.Text.RegularExpressions.Regex.IsMatch(query, @"^\s*(list|show)\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
-    {
-        ListTasks(repository.GetAll());
-        continue;
-    }
+    if (string.IsNullOrWhiteSpace(body.Query))
+        return Results.BadRequest(new { error = "Query is required." });
 
     try
     {
-        var task = await parser.ParseQueryAsync(query);
+        var task = await parser.ParseQueryAsync(body.Query);
         if (task is null)
-        {
-            Log.Info("Could not understand that request.");
-            continue;
-        }
+            return Results.UnprocessableEntity(new { error = "Could not understand that request." });
         repository.Add(task);
         Log.Info($"Added: \"{task.Description}\" ({task.ScheduleType}), next: {task.NextOccurrence:yyyy-MM-dd HH:mm}");
+        return Results.Created($"/tasks/{task.Id}", task);
     }
     catch (Exception ex)
     {
         Log.Info($"Could not add task: {ex.Message}");
+        return Results.BadRequest(new { error = ex.Message });
     }
-}
+});
 
+app.MapGet("/tasks", () => Results.Ok(repository.GetAll()));
+
+Log.Info($"API listening on http://localhost:{config.Port}");
+app.Run($"http://localhost:{config.Port}");
 cts.Cancel();
 
-static void ListTasks(List<ScheduledTask> tasks)
-{
-    if (tasks.Count == 0)
-    {
-        Console.WriteLine("No scheduled tasks.");
-        return;
-    }
-
-    Console.WriteLine($"\nScheduled tasks ({tasks.Count}):");
-    foreach (var task in tasks)
-    {
-        Console.WriteLine($"  [{task.Id.ToString()[..8]}] {task.Description}");
-        Console.WriteLine($"      {task.ScheduleType}, next: {task.NextOccurrence?.ToString("yyyy-MM-dd HH:mm") ?? "n/a"}");
-    }
-}
+public record TaskRequest(string Query);

@@ -6,6 +6,7 @@ public class AppConfig
 {
     public string NtfyUrl { get; set; } = "";
     public string Model { get; set; } = "";
+    public int Port { get; set; } = 8080;
 
     public static AppConfig Load(string path = "config.json")
     {

@@ -1,4 +1,5 @@
 {
   "NtfyUrl": "https://ntfy.sh/ctrep-gauchedroite-9341",
-  "Model": "moonshotai/kimi-k2.7-code"
+  "Model": "moonshotai/kimi-k2.7-code",
+  "Port": 8080
 }

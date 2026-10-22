@@ -1,41 +1,44 @@
 # remember-the-milk
 
-A task scheduler that notifies you of single or recurring events using [ntfy.sh](https://ntfy.sh). You type what you want in plain English; an LLM turns it into a scheduled task.
+A task scheduler that notifies you of single or recurring events using [ntfy.sh](https://ntfy.sh). You send what you want in plain English; an LLM turns it into a scheduled task.
 
-## Example
+## API
 
-```
-Task scheduler ready. Type a reminder request, or 'list' to show scheduled tasks. Ctrl+C to exit.
-remind me to check out the yukon lightning tomorrow at 2
-Added: "check out the yukon lightning" (Single), next: 2026-10-23 14:00
-ping me next week about bob's garage
-Added: "bob's garage" (Single), next: 2026-10-29 09:00
-clean the freezer: every day
-Added: "clean the freezer" (Daily), next: 2026-10-23 09:00
-list me the scheduled tasks
-```
+`POST /tasks` — create a task from a natural-language query:
 
 ```
-Scheduled tasks (3):
-  [a6e78ae3] check out the yukon lightning
-      Single, next: 2026-10-23 14:00
-  [21151754] bob's garage
-      Single, next: 2026-10-29 09:00
-  [e9d85db9] clean the freezer
-      Daily, next: 2026-10-23 09:00
+curl -X POST http://localhost:8080/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"query":"remind me to check out the yukon lightning tomorrow at 2"}'
 ```
+
+Response (201):
+```json
+{
+  "id": "a6e78ae3-...",
+  "description": "check out the yukon lightning",
+  "scheduleType": "Single",
+  "nextOccurrence": "2026-10-23T14:00:00",
+  "ntfyTitle": "Yukon Lightning",
+  "rawQuery": "remind me to check out the yukon lightning tomorrow at 2"
+}
+```
+
+`GET /tasks` — list all scheduled tasks (200, JSON array).
+
+Errors: `400` for an empty query or a parse failure (message includes the raw LLM output when the model returns invalid JSON), `422` if the request is understandable as a task.
 
 ## How it works
 
-- **Parsing**: every query is sent to `moonshotai/kimi-k2.7-code` via [OpenRouter](https://openrouter.ai), which returns strict JSON (`description`, `schedule type`, `next occurrence`, optional ntfy title). There is no fallback parser — if OpenRouter is unreachable, the task is not added.
+- **Parsing**: every query is sent to the model from `config.json` (default `moonshotai/kimi-k2.7-code`) via [OpenRouter](https://openrouter.ai), which returns strict JSON (`description`, `schedule type`, `next occurrence`, optional ntfy title). There is no fallback parser — if OpenRouter is unreachable, the task is not added.
 - **Storage**: tasks are kept in memory (see `TaskRepository`). Restarting the app loses them.
-- **Scheduling**: a background loop (`Scheduler`) checks every minute and fires `next: <date> <time>` — tasks are dropped once sent; recurring tasks (`Daily`, `Weekly`, `Monthly`) are rescheduled for the next occurrence.
-- **Notification**: `NotificationService` posts to your ntfy channel via `curl`.
+- **Scheduling**: a background loop (`Scheduler`) checks every 30 seconds and fires tasks whose `nextOccurrence` has passed — single tasks are removed once sent; recurring tasks (`Daily`, `Weekly`, `Monthly`) are rescheduled for their next occurrence.
+- **Notification**: `NotificationService` POSTs to your ntfy channel.
+- **Logging**: timestamped to the console and `app.log`.
 
 ## Requirements
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
-- `curl` on your PATH (used to send notifications)
 
 ## Setup
 
@@ -46,7 +49,7 @@ Scheduled tasks (3):
    dotnet build
    ```
 2. Put your OpenRouter key in a file named `openrouter.key` in the project root (or export it as the `OPENROUTER_API_KEY` environment variable).
-3. Edit `config.json` to set your ntfy channel (`NtfyUrl`) and the OpenRouter `Model` to use.
+3. Edit `config.json`: your ntfy channel (`NtfyUrl`), the OpenRouter `Model`, and the API `Port`.
 
 ## Run
 
@@ -54,11 +57,13 @@ Scheduled tasks (3):
 dotnet run
 ```
 
-Type a reminder and press Enter; type `list`/`show ... tasks` to see what's scheduled; `exit` or Ctrl+C to quit.
+The API listens on `http://localhost:8080` (or your configured port). Send `POST /tasks` requests with natural-language queries: "remind me to ...", "ping me next week about ...", "clean the freezer: every day", "in 30 minutes".
+
+A self-contained single-file build lives in `publish/` (`RememberTheMilk.exe`; copy `config.json` and `openrouter.key` next to it).
 
 ## Known limits
 
 - **In-memory storage** — tasks are lost on exit. Swap `TaskRepository` for SQLite if you need persistence.
 - **Local time only** — no time zones; the LLM is given your current local time and works from there.
-- **List matching is a regex** — anything containing "list/show" plus "task/reminder" lists instead of being parsed as a reminder.
 - **Monthly = +30 days** — no calendar-aware month arithmetic.
+- **The API trusts localhost** — no authentication; don't expose the port without adding some.
