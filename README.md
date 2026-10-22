@@ -26,6 +26,8 @@ Response (201):
 
 `GET /tasks` — list all scheduled tasks (200, JSON array).
 
+`DELETE /tasks/{id}` — remove a task (204, or 404 if the id is unknown).
+
 Errors: `400` for an empty query or a parse failure (message includes the raw LLM output when the model returns invalid JSON), `422` if the request is understandable as a task.
 
 ## How it works
