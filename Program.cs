@@ -8,7 +8,7 @@ var parser = new TaskParser(config.Model);
 using var cts = new CancellationTokenSource();
 var schedulerRun = new Scheduler(repository, notifier).RunAsync(cts.Token);
 
-Console.WriteLine("Task scheduler ready. Type a reminder request, or 'list' to show scheduled tasks. Ctrl+C to exit.");
+Log.Info("Task scheduler ready. Type a reminder request, or 'list' to show scheduled tasks. Ctrl+C to exit.");
 
 while (true)
 {
@@ -26,15 +26,15 @@ while (true)
         var task = await parser.ParseQueryAsync(query);
         if (task is null)
         {
-            Console.WriteLine("Could not understand that request.");
+            Log.Info("Could not understand that request.");
             continue;
         }
         repository.Add(task);
-        Console.WriteLine($"Added: \"{task.Description}\" ({task.ScheduleType}), next: {task.NextOccurrence:yyyy-MM-dd HH:mm}");
+        Log.Info($"Added: \"{task.Description}\" ({task.ScheduleType}), next: {task.NextOccurrence:yyyy-MM-dd HH:mm}");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Could not add task: {ex.Message}");
+        Log.Info($"Could not add task: {ex.Message}");
     }
 }
 

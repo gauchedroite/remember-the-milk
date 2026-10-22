@@ -14,7 +14,7 @@ public class Scheduler
 
     public async Task RunAsync(CancellationToken token)
     {
-        Console.WriteLine($"[scheduler] running, checking every {_interval.TotalSeconds}s");
+        Log.Info($"[scheduler] running, checking every {_interval.TotalSeconds}s");
         while (!token.IsCancellationRequested)
         {
             try
@@ -24,7 +24,7 @@ public class Scheduler
                     try
                     {
                         await _notifier.SendAsync(task);
-                        Console.WriteLine($"[scheduler] notified: {task.Description}");
+                        Log.Info($"[scheduler] notified: {task.Description}");
 
                         if (task.ScheduleType == ScheduleType.Single)
                             _repository.Remove(task);
@@ -34,13 +34,13 @@ public class Scheduler
                     catch (Exception ex)
                     {
                         // Task stays due; retried on the next tick.
-                        Console.WriteLine($"[scheduler] notify failed for \"{task.Description}\": {ex.Message}");
+                        Log.Info($"[scheduler] notify failed for \"{task.Description}\": {ex.Message}");
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[scheduler] error: {ex.Message}");
+                Log.Info($"[scheduler] error: {ex.Message}");
             }
 
             await Task.Delay(_interval, token);
