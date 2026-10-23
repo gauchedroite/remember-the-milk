@@ -5,7 +5,10 @@ namespace RememberTheMilk;
 
 public class TaskRepository
 {
-    private const string FileName = "tasks.json";
+    // Data lives in %LOCALAPPDATA%, not next to the exe: publish/deploy folders get wiped.
+    private static readonly string FileName = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "GaucheDroite", "RememberTheMilk", "tasks.json");
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -17,6 +20,8 @@ public class TaskRepository
 
     public TaskRepository()
     {
+        Directory.CreateDirectory(Path.GetDirectoryName(FileName)!);
+
         if (File.Exists(FileName))
         {
             var loaded = JsonSerializer.Deserialize<List<ScheduledTask>>(File.ReadAllText(FileName), JsonOpts);
@@ -25,9 +30,15 @@ public class TaskRepository
         }
     }
 
-    // Write to a temp file first: a crash mid-write must not destroy the task list.
+    // Copy the last good version first: even a bad write or an accidental delete leaves it recoverable.
+    // Write to a temp file and move: a crash mid-write must not destroy the task list.
     private void Persist()
     {
+        if (File.Exists(FileName))
+        {
+            File.Copy(FileName, FileName + ".bak", overwrite: true);
+        }
+
         var tmp = FileName + ".tmp";
         File.WriteAllText(tmp, JsonSerializer.Serialize(_tasks, JsonOpts));
         File.Move(tmp, FileName, overwrite: true);
@@ -76,8 +87,20 @@ public class TaskRepository
         {
             var stored = _tasks.FirstOrDefault(t => t.Id == task.Id);
             if (stored?.NextOccurrence is null) return;
-            var next = stored.NextOccurrence.Value + increment;
-            while (next <= DateTime.Now) next += increment;
+            DateTime next;
+            if (stored.ScheduleType == ScheduleType.Weekly && stored.Weekdays is { Count: > 0 })
+            {
+                // Same time of day, next calendar day that is one of the wanted weekdays.
+                next = stored.NextOccurrence.Value.Date;
+                do next = next.AddDays(1);
+                while (!stored.Weekdays.Contains(next.DayOfWeek));
+                next += stored.NextOccurrence.Value.TimeOfDay;
+            }
+            else
+            {
+                next = stored.NextOccurrence.Value + increment;
+                while (next <= DateTime.Now) next += increment;
+            }
             stored.NextOccurrence = next;
             Persist();
         }

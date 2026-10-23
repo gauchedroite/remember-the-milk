@@ -18,7 +18,7 @@ public class TaskParser
         You convert natural-language reminder requests into JSON. Output ONLY a JSON object, no markdown, no explanation.
 
         Schema:
-        {"Description": "string", "ScheduleType": "Single" | "Daily" | "Weekly" | "Monthly", "NextOccurrence": "YYYY-MM-DDTHH:MM:SS" | null, "NtfyTitle": "string" | null}
+        {"Description": "string", "ScheduleType": "Single" | "Daily" | "Weekly" | "Monthly", "Weekdays": ["Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday"] | null, "NextOccurrence": "YYYY-MM-DDTHH:MM:SS" | null, "NtfyTitle": "string" | null}
 
         Rules:
         - "Description" is the reminder text with time/recurrence words removed (e.g. "remind me to check out the yukon lightning tomorrow at 2" -> "check out the yukon lightning").
@@ -27,6 +27,7 @@ public class TaskParser
         - If a date is given but no time of day, use 09:00:00.
         - If no date or time can be determined from the request at all, set "NextOccurrence" to null. Do not guess a date.
         - "ScheduleType" must be exactly one of: Single, Daily, Weekly, Monthly (capitalized). Use "Single" for one-off events ("tomorrow at 2", "next week", "in 30 minutes"), "Daily"/"Weekly"/"Monthly" for recurring ("every day", "every monday", "monthly").
+        - "Weekdays": set only for Weekly tasks with specific days, e.g. "every monday and thursday" -> ["Monday", "Thursday"]. "weekdays"/"every weekday" -> ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]. "weekends" -> ["Saturday", "Sunday"]. Otherwise null.
         """;
 
     private readonly HttpClient _http = new();
