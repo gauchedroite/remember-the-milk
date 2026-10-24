@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>RememberTheMilk — Scheduled Notifications</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chota@latest/dist/chota.min.css">
+<style>
+  time { color: #666; }
+  #add { margin-bottom: 2rem; }
+  #toast { position: fixed; bottom: 1.5rem; right: 1.5rem; padding: .8rem 1.2rem; border-radius: 6px; background: #28bd14; color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.2); z-index: 100; }
+  #toast.error { background: var(--color-danger, #b00); }
+  td button { margin: 0; padding: .25rem .75rem; }
+  td button svg { vertical-align: -3px; }
+  td:last-child, th:last-child { text-align: right; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🔔 Scheduled Notifications</h1>
+  <form id="add" class="grouped">
+    <input id="query" class="input" style="flex:1" placeholder="e.g. take the bins out tomorrow at 6pm" required>
+  <button class="button primary">Remind me!</button>
+  </form>
+  <div id="toast" hidden></div>
+  <table id="tasks" class="striped">
+    <thead>
+      <tr><th>Day</th><th>Date</th><th>Time</th><th>Repeat</th><th>Reminder</th><th></th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <p id="empty" hidden>No scheduled notifications.</p>
+</div>
+<script>
+async function load() {
+  const res = await fetch('/tasks');
+  const tasks = await res.json();
+  const ts = t => t.nextOccurrence ? new Date(t.nextOccurrence).getTime() : Infinity;
+  tasks.sort((a, b) => ts(a) - ts(b));
+  const tbody = document.querySelector('#tasks tbody');
+  tbody.innerHTML = '';
+  for (const t of tasks) {
+    const d = t.nextOccurrence ? new Date(t.nextOccurrence) : null;
+    const date = d ? d.toLocaleDateString() : '—';
+    const time = d ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : '—';
+    const repeat = t.scheduleType === 'Single' ? 'once'
+      : t.scheduleType === 'Daily' ? 'daily'
+      : t.scheduleType === 'Weekly' ? (t.weekdays?.join(', ') ?? 'weekly')
+      : 'monthly';
+    const row = tbody.insertRow();
+    row.insertCell().innerHTML = `<time>${d ? d.toLocaleDateString([], { weekday: 'long' }) : '—'}</time>`;
+    row.insertCell().innerHTML = `<time>${date}</time>`;
+    row.insertCell().innerHTML = `<time>${time}</time>`;
+    row.insertCell().textContent = repeat;
+    row.insertCell().textContent = t.ntfyTitle ?? 'Reminder';
+    const del = row.insertCell().appendChild(document.createElement('button'));
+    del.className = 'button error';
+    del.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>';
+    del.title = 'Delete';
+    del.setAttribute('aria-label', 'Delete');
+    del.onclick = async () => {
+      if (!confirm(`Delete "${t.description}"?`)) return;
+      await fetch('/tasks/' + t.id, { method: 'DELETE' });
+      load();
+    };
+  }
+  document.getElementById('empty').hidden = tasks.length > 0;
+}
+document.getElementById('add').onsubmit = async e => {
+  e.preventDefault();
+  const button = document.querySelector('#add button');
+  button.disabled = true;
+  queryInput.disabled = true;
+  const toast = document.getElementById('toast');
+  const showToast = (msg, isError) => {
+    toast.textContent = msg;
+    toast.classList.toggle('error', Boolean(isError));
+    toast.hidden = false;
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => toast.hidden = true, 8000);
+  };
+  try {
+    const res = await fetch('/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: document.getElementById('query').value })
+    });
+    if (!res.ok) {
+      showToast((await res.json()).error, true);
+    } else {
+      queryInput.value = '';
+      queryInput.focus();
+      const task = await res.json();
+      showToast(`Added: "${task.description}" — ${new Date(task.nextOccurrence).toLocaleString()}`);
+    }
+  } catch {
+    showToast('Could not reach the server.', true);
+  }
+  load();
+  button.disabled = false;
+  queryInput.disabled = false;
+};
+const queryInput = document.getElementById('query');
+load();
+queryInput.focus();
+setInterval(load, 15000);
+</script>
+</body>
+</html>

@@ -44,6 +44,22 @@ app.MapPost("/tasks", async (TaskRequest body) =>
 
 app.MapGet("/tasks", () => Results.Ok(repository.GetAll()));
 
+// shortcut: index.html is read from the working directory (like tasks.json) and is not in the publish output; copy it manually when deploying
+app.MapGet("/", () => Results.Text(File.ReadAllText("index.html"), "text/html"));
+
+app.MapGet("/tasks/{id}", (Guid id) =>
+    repository.GetById(id) is { } task ? Results.Ok(task) : Results.NotFound());
+
+app.MapPut("/tasks/{id}", (Guid id, ScheduledTask body) =>
+{
+    if (string.IsNullOrWhiteSpace(body.Description))
+        return Results.BadRequest(new { error = "Description is required." });
+    if (body.NextOccurrence is null)
+        return Results.BadRequest(new { error = "NextOccurrence is required." });
+    body.Id = id;
+    return repository.Update(body) ? Results.Ok(body) : Results.NotFound();
+});
+
 app.MapDelete("/tasks/{id}", (Guid id) =>
     repository.RemoveById(id) ? Results.NoContent() : Results.NotFound());
 

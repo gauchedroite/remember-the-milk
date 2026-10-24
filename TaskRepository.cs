@@ -55,6 +55,28 @@ public class TaskRepository
         lock (_lock) { return _tasks.ToList(); }
     }
 
+    public ScheduledTask? GetById(Guid id)
+    {
+        lock (_lock) { return _tasks.FirstOrDefault(t => t.Id == id); }
+    }
+
+    // Replaces the editable fields of the stored task; the id and RawQuery stay as they were.
+    public bool Update(ScheduledTask updated)
+    {
+        lock (_lock)
+        {
+            var stored = _tasks.FirstOrDefault(t => t.Id == updated.Id);
+            if (stored is null) return false;
+            stored.Description = updated.Description;
+            stored.ScheduleType = updated.ScheduleType;
+            stored.Weekdays = updated.Weekdays;
+            stored.NextOccurrence = updated.NextOccurrence;
+            stored.NtfyTitle = updated.NtfyTitle;
+            Persist();
+            return true;
+        }
+    }
+
     public bool RemoveById(Guid id)
     {
         lock (_lock)

@@ -26,14 +26,24 @@ Response (201):
 
 `GET /tasks` — list all scheduled tasks (200, JSON array).
 
+`GET /tasks/{id}` — one scheduled task (200, or 404 if the id is unknown).
+
+`PUT /tasks/{id}` — update a task: send the full JSON object (like the create response) with new values for `description`, `scheduleType`, `weekdays`, `nextOccurrence`, `ntfyTitle`. The id and `rawQuery` stay as they were (200, `400` if description or nextOccurrence missing, 404 if the id is unknown).
+
 `DELETE /tasks/{id}` — remove a task (204, or 404 if the id is unknown).
 
 Errors: `400` for an empty query or a parse failure (message includes the raw LLM output when the model returns invalid JSON), `422` if the request is understandable as a task.
 
+## Web UI
+
+`GET /` serves a small page (`index.html`) to view and manage the scheduled notifications: add one by typing a natural-language query and pressing "Remind me!", delete with the trash icon (asks for confirmation). Feedback comes as toasts; the list refreshes every 15 seconds. Styling is [chota](https://github.com/jenil/chota), loaded from a CDN.
+
+`index.html` is read from the working directory at request time — it is not part of the publish output, so keep it next to the exe (or in the directory you run from).
+
 ## How it works
 
 - **Parsing**: every query is sent to the model from `config.json` (default `moonshotai/kimi-k2.7-code`) via [OpenRouter](https://openrouter.ai), which returns strict JSON (`description`, `schedule type`, `next occurrence`, optional ntfy title). There is no fallback parser — if OpenRouter is unreachable, the task is not added.
-- **Storage**: tasks are persisted to `tasks.json` in the working directory, loaded at startup. `TaskRepository` writes atomically (temp file + move).
+- **Storage**: tasks are persisted to `%LOCALAPPDATA%\GaucheDroite\RememberTheMilk\tasks.json`, loaded at startup. `TaskRepository` writes atomically (temp file + move, with a `.bak` copy of the last good version).
 - **Scheduling**: a background loop (`Scheduler`) checks every 30 seconds and fires tasks whose `nextOccurrence` has passed — single tasks are removed once sent; recurring tasks (`Daily`, `Weekly`, `Monthly`) are rescheduled for their next occurrence.
 - **Notification**: `NotificationService` POSTs to your ntfy channel.
 - **Logging**: timestamped to the console and `app.log`.
