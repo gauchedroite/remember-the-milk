@@ -1,5 +1,5 @@
 {
   "NtfyUrl": "https://ntfy.sh/ctrep-gauchedroite-9341",
-  "Model": "moonshotai/kimi-k2.7-code",
+  "Model": "google/gemini-2.5-flash",
   "Port": 8181
 }
