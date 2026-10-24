@@ -89,7 +89,6 @@ document.getElementById('add').onsubmit = async e => {
       showToast((await res.json()).error, true);
     } else {
       queryInput.value = '';
-      queryInput.focus();
       const task = await res.json();
       showToast(`Added: "${task.description}" — ${new Date(task.nextOccurrence).toLocaleString()}`);
     }
@@ -99,6 +98,7 @@ document.getElementById('add').onsubmit = async e => {
   load();
   button.disabled = false;
   queryInput.disabled = false;
+  queryInput.focus();
 };
 const queryInput = document.getElementById('query');
 load();
