@@ -46,6 +46,7 @@ app.MapGet("/tasks", () => Results.Ok(repository.GetAll()));
 
 // shortcut: index.html is read from the working directory (like tasks.json) and is not in the publish output; copy it manually when deploying
 app.MapGet("/", () => Results.Text(File.ReadAllText("index.html"), "text/html"));
+app.MapGet("/chota.min.css", () => Results.Text(File.ReadAllText("chota.min.css"), "text/css"));
 
 app.MapGet("/tasks/{id}", (Guid id) =>
     repository.GetById(id) is { } task ? Results.Ok(task) : Results.NotFound());

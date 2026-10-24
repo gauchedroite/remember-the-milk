@@ -4,6 +4,11 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
+  <!-- Served at runtime from the working directory; must ship with the exe. -->
+  <ItemGroup>
+    <None Update="index.html;chota.min.css" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
