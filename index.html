@@ -52,7 +52,7 @@ async function load() {
     row.insertCell().innerHTML = `<time>${date}</time>`;
     row.insertCell().innerHTML = `<time>${time}</time>`;
     row.insertCell().textContent = repeat;
-    row.insertCell().textContent = t.ntfyTitle ?? 'Reminder';
+    row.insertCell().textContent = t.description;
     const del = row.insertCell().appendChild(document.createElement('button'));
     del.className = 'button error';
     del.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>';
