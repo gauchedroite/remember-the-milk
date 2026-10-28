@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="/chota.min.css">
 <style>
   time { color: #666; }
+  .today td { font-weight: bold; }
   #add { margin-bottom: 2rem; }
   #toast { position: fixed; bottom: 1.5rem; right: 1.5rem; padding: .8rem 1.2rem; border-radius: 6px; background: #28bd14; color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.2); z-index: 100; }
   #toast.error { background: var(--color-danger, #b00); }
@@ -38,6 +39,7 @@ async function load() {
   const ts = t => t.nextOccurrence ? new Date(t.nextOccurrence).getTime() : Infinity;
   tasks.sort((a, b) => ts(a) - ts(b));
   const tbody = document.querySelector('#tasks tbody');
+  const today = new Date().toDateString();
   tbody.innerHTML = '';
   for (const t of tasks) {
     const d = t.nextOccurrence ? new Date(t.nextOccurrence) : null;
@@ -48,7 +50,9 @@ async function load() {
       : t.scheduleType === 'Weekly' ? (t.weekdays?.join(', ') ?? 'weekly')
       : 'monthly';
     const row = tbody.insertRow();
-    row.insertCell().innerHTML = `<time>${d ? d.toLocaleDateString([], { weekday: 'long' }) : '—'}</time>`;
+    const day = row.insertCell();
+    day.innerHTML = `<time>${d ? d.toLocaleDateString([], { weekday: 'long' }) : '—'}</time>`;
+    if (d?.toDateString() === today) row.classList.add('today');
     row.insertCell().innerHTML = `<time>${date}</time>`;
     row.insertCell().innerHTML = `<time>${time}</time>`;
     row.insertCell().textContent = repeat;
