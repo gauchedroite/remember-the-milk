@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 var config = AppConfig.Load();
 var repository = new TaskRepository();
 var notifier = new NotificationService(config.NtfyUrl);
-var parser = new TaskParser(config.Model);
+var parser = new TaskParser(config.Models);
 
 using var cts = new CancellationTokenSource();
 var schedulerRun = new Scheduler(repository, notifier).RunAsync(cts.Token);

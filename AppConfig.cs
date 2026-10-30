@@ -5,7 +5,8 @@ namespace RememberTheMilk;
 public class AppConfig
 {
     public string NtfyUrl { get; set; } = "";
-    public string Model { get; set; } = "";
+    public string[] Models { get; set; } = [];
+    public string Model { get; set; } = ""; // Legacy single-model config.
     public int Port { get; set; } = 8080;
 
     public static AppConfig Load(string path = "config.json")
@@ -15,8 +16,12 @@ public class AppConfig
         var config = JsonSerializer.Deserialize<AppConfig>(File.ReadAllText(path),
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
             ?? throw new InvalidOperationException($"Could not parse {path}.");
-        if (string.IsNullOrEmpty(config.NtfyUrl) || string.IsNullOrEmpty(config.Model))
-            throw new InvalidOperationException($"{path} must set both NtfyUrl and Model.");
+        var models = config.Models ?? [];
+        if (models.Length == 0 && !string.IsNullOrWhiteSpace(config.Model))
+            models = [config.Model];
+        if (string.IsNullOrWhiteSpace(config.NtfyUrl) || models.Length == 0 || models.Any(string.IsNullOrWhiteSpace))
+            throw new InvalidOperationException($"{path} must set NtfyUrl and a non-empty Models list.");
+        config.Models = models;
         return config;
     }
 }

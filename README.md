@@ -42,7 +42,7 @@ Errors: `400` for an empty query or a parse failure (message includes the raw LL
 
 ## How it works
 
-- **Parsing**: every query is sent to the model from `config.json` (the repo ships `google/gemini-2.5-flash`) via [OpenRouter](https://openrouter.ai), which returns strict JSON (`description`, `schedule type`, `next occurrence`, optional ntfy title). There is no fallback parser — if OpenRouter is unreachable, the task is not added.
+- **Parsing**: every query is sent via [OpenRouter](https://openrouter.ai) to the first model in `config.json`'s `Models` list. If it is unavailable or rate-limited, OpenRouter tries the remaining models in order. The repo uses `google/gemini-2.5-flash` first and `openai/gpt-4o-mini` as fallback. The model must return strict JSON (`description`, `schedule type`, `next occurrence`, optional ntfy title); if all models fail, the task is not added.
 - **Storage**: tasks are persisted to `%LOCALAPPDATA%\GaucheDroite\RememberTheMilk\tasks.json`, loaded at startup. `TaskRepository` writes atomically (temp file + move, with a `.bak` copy of the last good version).
 - **Scheduling**: a background loop (`Scheduler`) checks every 30 seconds and fires tasks whose `nextOccurrence` has passed — single tasks are removed once sent; recurring tasks (`Daily`, `Weekly`, `Monthly`) are rescheduled for their next occurrence.
 - **Notification**: `NotificationService` POSTs to your ntfy channel.
@@ -61,7 +61,7 @@ Errors: `400` for an empty query or a parse failure (message includes the raw LL
    dotnet build
    ```
 2. Put your OpenRouter key in a file named `openrouter.key` in the project root (or export it as the `OPENROUTER_API_KEY` environment variable).
-3. Edit `config.json`: your ntfy channel (`NtfyUrl`), the OpenRouter `Model`, and the API `Port`.
+3. Edit `config.json`: your ntfy channel (`NtfyUrl`), an ordered `Models` list (first is primary; later models are fallbacks), and the API `Port`.
 
 ## Run
 

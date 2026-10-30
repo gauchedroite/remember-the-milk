@@ -7,11 +7,11 @@ namespace RememberTheMilk;
 public class TaskParser
 {
     private const string ApiUrl = "https://openrouter.ai/api/v1/chat/completions";
-    private readonly string _model;
+    private readonly string[] _models;
 
-    public TaskParser(string model)
+    public TaskParser(string[] models)
     {
-        _model = model;
+        _models = models;
     }
 
     private static readonly string SystemPrompt = """
@@ -45,15 +45,18 @@ public class TaskParser
         var now = DateTime.Now;
         var prompt = SystemPrompt.Replace("{NOW}", now.ToString("yyyy-MM-dd HH:mm:ss dddd"));
 
-        var payload = JsonSerializer.Serialize(new
+        var requestBody = new Dictionary<string, object>
         {
-            model = _model,
-            messages = new object[]
+            ["model"] = _models[0],
+            ["messages"] = new object[]
             {
                 new { role = "system", content = prompt },
                 new { role = "user", content = query }
             }
-        });
+        };
+        if (_models.Length > 1)
+            requestBody["models"] = _models[1..];
+        var payload = JsonSerializer.Serialize(requestBody);
 
         using var request = new HttpRequestMessage(HttpMethod.Post, ApiUrl)
         {

@@ -13,7 +13,7 @@ public class NotificationService(string ntfyUrl)
         {
             Content = new StringContent(task.Description, Encoding.UTF8)
         };
-        request.Headers.Add("Title", "Remember the milk");
+        request.Headers.Add("Title", $"Remember the milk ({task.ScheduleType})");
 
         var response = await _http.SendAsync(request);
         if (!response.IsSuccessStatusCode)

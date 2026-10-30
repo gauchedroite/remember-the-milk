@@ -1,5 +1,8 @@
 {
   "NtfyUrl": "https://ntfy.sh/ctrep-gauchedroite-9341",
-  "Model": "google/gemini-2.5-flash",
+  "Models": [
+    "google/gemini-2.5-flash",
+    "openai/gpt-4o-mini"
+  ],
   "Port": 8181
 }
