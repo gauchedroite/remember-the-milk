@@ -1,5 +1,6 @@
 {
   "NtfyUrl": "https://ntfy.sh/ctrep-gauchedroite-9341",
+  "EmailTo": "christian-9341@proton.me",
   "Models": [
     "google/gemini-2.5-flash",
     "openai/gpt-4o-mini"

@@ -5,6 +5,7 @@ namespace RememberTheMilk;
 public class AppConfig
 {
     public string NtfyUrl { get; set; } = "";
+    public string EmailTo { get; set; } = "christian-9341@proton.me";
     public string[] Models { get; set; } = [];
     public string Model { get; set; } = ""; // Legacy single-model config.
     public int Port { get; set; } = 8080;
@@ -19,8 +20,8 @@ public class AppConfig
         var models = config.Models ?? [];
         if (models.Length == 0 && !string.IsNullOrWhiteSpace(config.Model))
             models = [config.Model];
-        if (string.IsNullOrWhiteSpace(config.NtfyUrl) || models.Length == 0 || models.Any(string.IsNullOrWhiteSpace))
-            throw new InvalidOperationException($"{path} must set NtfyUrl and a non-empty Models list.");
+        if (string.IsNullOrWhiteSpace(config.NtfyUrl) || string.IsNullOrWhiteSpace(config.EmailTo) || models.Length == 0 || models.Any(string.IsNullOrWhiteSpace))
+            throw new InvalidOperationException($"{path} must set NtfyUrl, EmailTo, and a non-empty Models list.");
         config.Models = models;
         return config;
     }

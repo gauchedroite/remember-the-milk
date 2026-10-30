@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 var config = AppConfig.Load();
 var repository = new TaskRepository();
-var notifier = new NotificationService(config.NtfyUrl);
+var notifier = new NotificationService(config.NtfyUrl, config.EmailTo);
 var parser = new TaskParser(config.Models);
 
 using var cts = new CancellationTokenSource();

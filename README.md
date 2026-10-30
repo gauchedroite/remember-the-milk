@@ -45,7 +45,7 @@ Errors: `400` for an empty query or a parse failure (message includes the raw LL
 - **Parsing**: every query is sent via [OpenRouter](https://openrouter.ai) to the first model in `config.json`'s `Models` list. If it is unavailable or rate-limited, OpenRouter tries the remaining models in order. The repo uses `google/gemini-2.5-flash` first and `openai/gpt-4o-mini` as fallback. The model must return strict JSON (`description`, `schedule type`, `next occurrence`, optional ntfy title); if all models fail, the task is not added.
 - **Storage**: tasks are persisted to `%LOCALAPPDATA%\GaucheDroite\RememberTheMilk\tasks.json`, loaded at startup. `TaskRepository` writes atomically (temp file + move, with a `.bak` copy of the last good version).
 - **Scheduling**: a background loop (`Scheduler`) checks every 30 seconds and fires tasks whose `nextOccurrence` has passed — single tasks are removed once sent; recurring tasks (`Daily`, `Weekly`, `Monthly`) are rescheduled for their next occurrence.
-- **Notification**: `NotificationService` POSTs to your ntfy channel.
+- **Notification**: after ntfy accepts a reminder, `NotificationService` also submits it through classic Outlook to `EmailTo`. If Outlook is unavailable or email fails, the failure is logged; ntfy remains the primary delivery and is not repeated just because email failed.
 - **Logging**: timestamped to the console and `app.log`.
 
 ## Requirements
@@ -61,7 +61,7 @@ Errors: `400` for an empty query or a parse failure (message includes the raw LL
    dotnet build
    ```
 2. Put your OpenRouter key in a file named `openrouter.key` in the project root (or export it as the `OPENROUTER_API_KEY` environment variable).
-3. Edit `config.json`: your ntfy channel (`NtfyUrl`), an ordered `Models` list (first is primary; later models are fallbacks), and the API `Port`.
+3. Edit `config.json`: your ntfy channel (`NtfyUrl`), email recipient (`EmailTo`), an ordered `Models` list (first is primary; later models are fallbacks), and the API `Port`. Email delivery requires classic Outlook installed and configured on the same Windows account.
 
 ## Run
 
