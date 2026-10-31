@@ -8,6 +8,8 @@
 - Before any command that touches files, check whether the target is data or code.
 
 ## Publishing
+- After code changes, always run `stop_server.bat`, publish, then run `run_server.bat` to restart the app.
+- Always run `stop_server.bat` before publishing so the existing exe is not locked.
 - Publish framework-dependent, not self-contained: `dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o publish`.
   This machine has the .NET 10 runtime, and self-contained produces a ~100 MB exe.
 

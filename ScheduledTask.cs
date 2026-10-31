@@ -15,6 +15,7 @@ public class ScheduledTask
     public ScheduleType ScheduleType { get; set; }
     public List<DayOfWeek>? Weekdays { get; set; } // set for "every monday", "weekdays"; null = simple interval
     public DateTime? NextOccurrence { get; set; }
+    public bool IsMuted { get; set; }
     public string? NtfyTitle { get; set; }
     public string RawQuery { get; set; } = "";
 }

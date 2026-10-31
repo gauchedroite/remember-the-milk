@@ -57,6 +57,8 @@ app.MapPut("/tasks/{id}", (Guid id, ScheduledTask body) =>
         return Results.BadRequest(new { error = "Description is required." });
     if (body.NextOccurrence is null)
         return Results.BadRequest(new { error = "NextOccurrence is required." });
+    if (body.IsMuted && body.ScheduleType == ScheduleType.Single)
+        return Results.BadRequest(new { error = "Only recurring reminders can be muted." });
     body.Id = id;
     return repository.Update(body) ? Results.Ok(body) : Results.NotFound();
 });

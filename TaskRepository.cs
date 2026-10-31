@@ -71,6 +71,7 @@ public class TaskRepository
             stored.ScheduleType = updated.ScheduleType;
             stored.Weekdays = updated.Weekdays;
             stored.NextOccurrence = updated.NextOccurrence;
+            stored.IsMuted = updated.IsMuted;
             stored.NtfyTitle = updated.NtfyTitle;
             Persist();
             return true;

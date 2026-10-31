@@ -23,8 +23,13 @@ public class Scheduler
                 {
                     try
                     {
-                        await _notifier.SendAsync(task);
-                        Log.Info($"[scheduler] notified: {task.Description}");
+                        if (task.IsMuted && task.ScheduleType != ScheduleType.Single)
+                            Log.Info($"[scheduler] muted: {task.Description}");
+                        else
+                        {
+                            await _notifier.SendAsync(task);
+                            Log.Info($"[scheduler] notified: {task.Description}");
+                        }
 
                         if (task.ScheduleType == ScheduleType.Single)
                             _repository.RemoveById(task.Id);

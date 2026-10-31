@@ -12,7 +12,8 @@
   #toast { position: fixed; bottom: 1.5rem; right: 1.5rem; padding: .8rem 1.2rem; border-radius: 6px; background: #28bd14; color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.2); z-index: 100; }
   #toast.error { background: var(--color-danger, #b00); }
   td button { margin: 0; padding: .25rem .75rem; }
-  td button svg { vertical-align: -3px; }
+  .delete-link { color: #b00; font-size: 2.5rem; font-weight: bold; line-height: 1; text-decoration: none; }
+  .delete-link:hover, .delete-link:focus { color: #800; }
   td:last-child, th:last-child { text-align: right; }
 </style>
 </head>
@@ -33,6 +34,14 @@
   <p id="empty" hidden>No scheduled notifications.</p>
 </div>
 <script>
+const toast = document.getElementById('toast');
+const showToast = (msg, isError) => {
+  toast.textContent = msg;
+  toast.classList.toggle('error', Boolean(isError));
+  toast.hidden = false;
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => toast.hidden = true, 8000);
+};
 async function load() {
   const res = await fetch('/tasks');
   const tasks = await res.json();
@@ -56,13 +65,42 @@ async function load() {
     row.insertCell().innerHTML = `<time>${date}</time>`;
     row.insertCell().innerHTML = `<time>${time}</time>`;
     row.insertCell().textContent = repeat;
-    row.insertCell().textContent = t.description;
-    const del = row.insertCell().appendChild(document.createElement('button'));
-    del.className = 'button error';
-    del.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>';
+    const canMute = t.scheduleType !== 'Single';
+    row.insertCell().textContent = t.description + (canMute && t.isMuted ? ' (muted)' : '');
+    const actions = row.insertCell();
+    if (canMute) {
+      const mute = actions.appendChild(document.createElement('input'));
+      mute.type = 'checkbox';
+      mute.checked = t.isMuted;
+      mute.title = 'Mute recurring reminder';
+      mute.setAttribute('aria-label', mute.title);
+      mute.onchange = async () => {
+        const isMuted = mute.checked;
+        mute.disabled = true;
+        try {
+          const res = await fetch('/tasks/' + t.id, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...t, isMuted })
+          });
+          if (!res.ok) throw new Error('Could not update reminder.');
+        } catch {
+          mute.checked = t.isMuted;
+          showToast('Could not update reminder.', true);
+        } finally {
+          mute.disabled = false;
+        }
+        load();
+      };
+    }
+    const del = actions.appendChild(document.createElement('a'));
+    del.className = 'delete-link';
+    del.href = '#';
+    del.textContent = '×';
     del.title = 'Delete';
     del.setAttribute('aria-label', 'Delete');
-    del.onclick = async () => {
+    del.onclick = async e => {
+      e.preventDefault();
       if (!confirm(`Delete "${t.description}"?`)) return;
       await fetch('/tasks/' + t.id, { method: 'DELETE' });
       load();
@@ -75,14 +113,6 @@ document.getElementById('add').onsubmit = async e => {
   const button = document.querySelector('#add button');
   button.disabled = true;
   queryInput.disabled = true;
-  const toast = document.getElementById('toast');
-  const showToast = (msg, isError) => {
-    toast.textContent = msg;
-    toast.classList.toggle('error', Boolean(isError));
-    toast.hidden = false;
-    clearTimeout(toast._timer);
-    toast._timer = setTimeout(() => toast.hidden = true, 8000);
-  };
   try {
     const res = await fetch('/tasks', {
       method: 'POST',
