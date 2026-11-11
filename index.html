@@ -12,6 +12,9 @@
   #toast { position: fixed; bottom: 1.5rem; right: 1.5rem; padding: .8rem 1.2rem; border-radius: 6px; background: #28bd14; color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.2); z-index: 100; }
   #toast.error { background: var(--color-danger, #b00); }
   td button { margin: 0; padding: .25rem .75rem; }
+  .actions { display: flex; justify-content: flex-end; align-items: center; gap: .5rem; }
+  .pause-link { color: #555; font-size: 1.5rem; line-height: 1; text-decoration: none; }
+  .pause-link:hover, .pause-link:focus { color: #000; }
   .delete-link { color: #b00; font-size: 2.5rem; font-weight: bold; line-height: 1; text-decoration: none; }
   .delete-link:hover, .delete-link:focus { color: #800; }
   td:last-child, th:last-child { text-align: right; }
@@ -42,6 +45,35 @@ const showToast = (msg, isError) => {
   clearTimeout(toast._timer);
   toast._timer = setTimeout(() => toast.hidden = true, 8000);
 };
+function addPauseLink(actions, task) {
+  const control = actions.appendChild(document.createElement('a'));
+  control.className = 'pause-link';
+  control.href = '#';
+  control.textContent = task.isPaused ? '▶' : '⏸';
+  control.title = task.isPaused ? 'Resume notification' : 'Pause notification';
+  control.setAttribute('aria-label', control.title);
+  let busy = false;
+  control.onclick = async e => {
+    e.preventDefault();
+    if (busy) return;
+    busy = true;
+    control.setAttribute('aria-disabled', 'true');
+    try {
+      const res = await fetch('/tasks/' + task.id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...task, isPaused: !task.isPaused })
+      });
+      if (!res.ok) throw new Error('Could not update reminder.');
+    } catch {
+      showToast('Could not update reminder.', true);
+    } finally {
+      busy = false;
+      control.removeAttribute('aria-disabled');
+    }
+    load();
+  };
+}
 async function load() {
   const res = await fetch('/tasks');
   const tasks = await res.json();
@@ -65,34 +97,12 @@ async function load() {
     row.insertCell().innerHTML = `<time>${date}</time>`;
     row.insertCell().innerHTML = `<time>${time}</time>`;
     row.insertCell().textContent = repeat;
-    const canMute = t.scheduleType !== 'Single';
-    row.insertCell().textContent = t.description + (canMute && t.isMuted ? ' (muted)' : '');
+    row.insertCell().textContent = t.description
+      + (t.isMuted ? ' (muted)' : '')
+      + (t.isPaused ? ' (paused)' : '');
     const actions = row.insertCell();
-    if (canMute) {
-      const mute = actions.appendChild(document.createElement('input'));
-      mute.type = 'checkbox';
-      mute.checked = t.isMuted;
-      mute.title = 'Mute recurring reminder';
-      mute.setAttribute('aria-label', mute.title);
-      mute.onchange = async () => {
-        const isMuted = mute.checked;
-        mute.disabled = true;
-        try {
-          const res = await fetch('/tasks/' + t.id, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ...t, isMuted })
-          });
-          if (!res.ok) throw new Error('Could not update reminder.');
-        } catch {
-          mute.checked = t.isMuted;
-          showToast('Could not update reminder.', true);
-        } finally {
-          mute.disabled = false;
-        }
-        load();
-      };
-    }
+    actions.className = 'actions';
+    addPauseLink(actions, t);
     const del = actions.appendChild(document.createElement('a'));
     del.className = 'delete-link';
     del.href = '#';

@@ -23,6 +23,12 @@ public class Scheduler
                 {
                     try
                     {
+                        if (task.IsPaused)
+                        {
+                            Log.Info($"[scheduler] paused: {task.Description}");
+                            continue;
+                        }
+
                         if (task.IsMuted && task.ScheduleType != ScheduleType.Single)
                             Log.Info($"[scheduler] muted: {task.Description}");
                         else

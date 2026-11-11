@@ -72,6 +72,7 @@ public class TaskRepository
             stored.Weekdays = updated.Weekdays;
             stored.NextOccurrence = updated.NextOccurrence;
             stored.IsMuted = updated.IsMuted;
+            stored.IsPaused = updated.IsPaused;
             stored.NtfyTitle = updated.NtfyTitle;
             Persist();
             return true;
@@ -92,7 +93,7 @@ public class TaskRepository
     {
         lock (_lock)
         {
-            return _tasks.Where(t => t.NextOccurrence.HasValue && t.NextOccurrence.Value <= now).ToList();
+            return _tasks.Where(t => !t.IsPaused && t.NextOccurrence.HasValue && t.NextOccurrence.Value <= now).ToList();
         }
     }
 
